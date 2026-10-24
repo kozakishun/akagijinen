@@ -47,9 +47,14 @@ nav button b{display:block;font-size:22px}
 .cno{display:inline-flex;align-items:center;gap:6px;background:var(--chip);border-radius:10px;padding:6px 10px;margin:3px;font-weight:700}
 .cno i{font-style:normal;color:var(--danger);cursor:pointer;padding:0 4px}
 .wrow{display:flex;gap:10px;align-items:center;padding:6px 0;border-bottom:1px solid var(--line)}
-.wrow .n{width:96px;font-weight:700}
-.wrow input{flex:1;text-align:right}
+.wrow .n{width:72px;font-weight:700}
+.wrow input{flex:1;min-width:0;text-align:right}
+.wrow input.tag{flex:0 0 72px;font-size:16px}
 .wrow .net{width:84px;text-align:right;color:var(--sub);font-size:15px}
+.srow{display:flex;gap:8px;align-items:center;padding:8px 0;border-bottom:1px solid var(--line);font-size:15px}
+.srow input{width:26px;min-height:26px;flex:0 0 26px}
+.srow span{flex:1;min-width:0}
+.srow .num{flex:0 0 auto;text-align:right;font-weight:700}
 .wrow .kz{flex:0 0 auto}
 .chip.kz.on{background:var(--accent);border-color:var(--accent);color:#fff}
 table.rep{width:100%;border-collapse:collapse;font-size:15px}
@@ -79,6 +84,7 @@ table.rep input{width:28px;min-height:28px}
       <button class="chip small" style="margin-top:8px" id="btn-now">時間を「今」にする</button>
     </section>
     <section class="card"><h2>生産者</h2><div class="chips" id="c-producer"></div></section>
+    <section class="card"><h2>出荷先</h2><div class="chips" id="c-dest"></div></section>
     <section class="card"><h2>品名</h2><div class="chips" id="c-product"></div></section>
     <section class="card"><h2>圃場名</h2><div class="chips" id="c-field"></div>
       <input id="f-field-free" placeholder="一覧に無い場合はここに入力" style="margin-top:8px"></section>
@@ -108,6 +114,11 @@ table.rep input{width:28px;min-height:28px}
     <section class="card"><h2>計量する納品を選ぶ</h2><div id="w-pick"></div></section>
     <section class="card hide" id="w-box">
       <div id="w-head" style="font-weight:700;margin-bottom:6px"></div>
+      <label class="l">規格（割合）… 後で生産者と決める場合は空欄のままで可</label>
+      <div class="row" style="margin-bottom:8px">
+        <input id="wr-xl" inputmode="decimal" placeholder="特大"><input id="wr-l" inputmode="decimal" placeholder="大"><input id="wr-m" inputmode="decimal" placeholder="中">
+      </div>
+      <div class="muted">重量 ／ 荷札番号 ／ キズ</div>
       <div id="w-rows"></div>
       <div class="total" id="w-total"></div>
       <button class="btn" id="btn-wslip" style="margin-top:10px">計量結果つき納品書を作る</button>
@@ -141,13 +152,40 @@ table.rep input{width:28px;min-height:28px}
       ③6行目から下を消す ④A6 を選んで貼り付け。俵数（÷30）と合計の式も入ります。</p>
   </div>
 
+  <!-- 出荷（加工業者向け出荷伝票。1枚＝コンテナ11基まで、荷受けの時刻順） -->
+  <div id="v-ship" class="hide">
+    <section class="card">
+      <label class="l">出荷日</label><input type="date" id="s-sdate">
+      <h2 style="margin-top:12px">出荷先</h2><div class="chips" id="c-sdest"></div>
+      <h2 style="margin-top:12px">区分</h2><div class="chips" id="c-skind"></div>
+    </section>
+    <section class="card">
+      <h2>未出荷のコンテナ（荷受けの時刻順・先頭11基を選択済み）</h2>
+      <div id="s-list"></div>
+      <div class="total" id="s-sum" style="font-size:18px;margin-top:8px"></div>
+      <label class="l">伝票NO（空欄可）</label><input id="s-no" inputmode="numeric">
+    </section>
+    <button class="btn" id="btn-ssend">伝票データをLINEなどで送る</button>
+    <button class="btn sub" id="btn-scopy" style="margin-top:8px">伝票データをコピー</button>
+    <p class="muted">PCのLINEでその文をコピー →「出荷伝票作成.bat」をダブルクリックで、出荷先の伝票に記入・保存・印刷します。
+      送ったあとに「出荷済みにする」を選ぶと、次からは一覧に出ません。</p>
+    <section class="card"><h2>この日の出荷済み</h2><div id="s-done"></div></section>
+  </div>
+
   <!-- 設定 -->
   <div id="v-set" class="hide">
     <section class="card">
+      <h2>初期設定をまとめて貼り付け</h2>
+      <textarea id="s-import" placeholder="「初期設定_生産者と圃場.txt」の中身を全部貼り付け"></textarea>
+      <button class="btn sub" id="btn-import" style="margin-top:8px">貼り付けた内容を読み込む</button>
+    </section>
+    <section class="card">
       <label class="l">納品書に載せる受入先名</label><input id="s-company">
+      <label class="l">検査員（出荷伝票に記入）</label><input id="s-inspector">
+      <label class="l">出荷先（1行に1つ。PCの出荷伝票ファイル名に含まれる名前と同じに）</label><textarea id="s-dests"></textarea>
       <label class="l">コンテナ自重（kg）… 引いて正味にします。0なら引きません</label><input id="s-tare" inputmode="decimal">
       <label class="l">品名（1行に1つ）</label><textarea id="s-products"></textarea>
-      <label class="l">生産者と圃場（1行に1人。「生産者名: 圃場(面積), 圃場(面積), …」面積は省略可）</label><textarea id="s-producers" style="min-height:200px"></textarea>
+      <label class="l">生産者と圃場（1行に1人。「生産者名: 圃場(面積), 圃場(面積,転換), …」面積は省略可。転換期間中の圃場だけ「,転換」）</label><textarea id="s-producers" style="min-height:200px"></textarea>
       <button class="btn" id="btn-sset" style="margin-top:10px">設定を保存</button>
     </section>
     <section class="card">
@@ -164,6 +202,7 @@ table.rep input{width:28px;min-height:28px}
   <button data-v="w"><b>⚖️</b>計量</button>
   <button data-v="log"><b>📋</b>記録</button>
   <button data-v="rep"><b>📊</b>日報</button>
+  <button data-v="ship"><b>🚚</b>出荷</button>
   <button data-v="set"><b>⚙️</b>設定</button>
 </nav>
 <div id="toast"></div>
@@ -202,26 +241,30 @@ const esc = s => String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>
 const uid = () => Date.now().toString(36)+Math.random().toString(36).slice(2,5);
 const jd = s => {const [y,m,d]=s.split('-');return `${y}年${+m}月${+d}日`;};
 function toast(msg){const t=$('toast');t.textContent=msg;t.classList.add('on');setTimeout(()=>t.classList.remove('on'),2200);}
-function newDraft(){return {id:null,date:todayStr(),time:nowHM(),producer:'',product:'',field:'',containers:[],qty:'',qtyManual:false};}
+function newDraft(){return {id:null,date:todayStr(),time:nowHM(),producer:'',product:'',field:'',
+  dest:(db&&db.master.lastDest)||'',containers:[],qty:'',qtyManual:false};}
 const tare = () => Number(db.master.tare)||0;
 const net = c => (c.weight==null||c.weight==='') ? null : Math.round((c.weight - tare())*100)/100;
+const wt = c => tare()>0 ? net(c) : Number(c.weight);   // 日報・出荷伝票に載せる重量（自重設定ありなら正味）
 
 /* ---------- 状態 ---------- */
-let db = load();
+let db = null;
+db = load();
 let draft = newDraft();
 let curId = null;      // 計量中の納品ID
 let lastBlob = null, lastName = '';
 
 /* ---------- タブ ---------- */
-const TITLES = {in:'荷受け 納品書', w:'コンテナ計量', log:'記録', rep:'日報（社長報告用）', set:'設定'};
+const TITLES = {in:'荷受け 納品書', w:'コンテナ計量', log:'記録', rep:'日報（社長報告用）', ship:'出荷伝票', set:'設定'};
 function show(v){
-  ['in','w','log','rep','set'].forEach(k=>$('v-'+k).classList.toggle('hide',k!==v));
+  ['in','w','log','rep','ship','set'].forEach(k=>$('v-'+k).classList.toggle('hide',k!==v));
   document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('on',b.dataset.v===v));
   $('ttl').textContent = TITLES[v];
   if(v==='in') renderIn();   // 設定を変えた直後でも生産者・品名ボタンを最新にする
   if(v==='w') renderWeigh();
   if(v==='log') renderLog();
   if(v==='rep') renderReport();
+  if(v==='ship') renderShip();
   if(v==='set') renderSettings();
   window.scrollTo(0,0);
 }
@@ -235,6 +278,7 @@ function chips(id, items, sel, small){
 function renderIn(){
   $('f-date').value = draft.date; $('f-time').value = draft.time;
   chips('c-producer', db.master.producers.map(p=>p.name), draft.producer);
+  chips('c-dest', db.master.dests||[], draft.dest);
   chips('c-product', db.master.products, draft.product);
   const p = db.master.producers.find(p=>p.name===draft.producer);
   chips('c-field', p?p.fields:[], draft.field);
@@ -254,6 +298,7 @@ $('c-producer').onclick = e => {
   draft.producer = b.dataset.v; draft.field=''; renderIn();
 };
 $('c-product').onclick = e => {const b=e.target.closest('button'); if(!b) return; draft.product=b.dataset.v; renderIn();};
+$('c-dest').onclick = e => {const b=e.target.closest('button'); if(!b) return; draft.dest=b.dataset.v; renderIn();};
 $('c-field').onclick = e => {const b=e.target.closest('button'); if(!b) return; draft.field=b.dataset.v; renderIn();};
 $('f-field-free').oninput = e => {draft.field = e.target.value.trim(); document.querySelectorAll('#c-field .chip').forEach(c=>c.classList.remove('on'));};
 function addContainer(no){
@@ -287,14 +332,16 @@ $('btn-make').onclick = async () => {
   if(!draft.date) miss.push('日付'); if(!draft.time) miss.push('荷受け時間');
   if(!draft.producer) miss.push('生産者'); if(!draft.product) miss.push('品名');
   if(!draft.field) miss.push('圃場名'); if(!draft.containers.length) miss.push('コンテナ番号');
+  if((db.master.dests||[]).length && !draft.dest) miss.push('出荷先');
   if(miss.length){toast('未入力: '+miss.join('・'));return;}
   let rec;
   if(draft.id){ rec = db.deliveries.find(d=>d.id===draft.id); }
   else { rec = {id:uid(), created:Date.now()}; db.deliveries.push(rec); }
-  // 既存の計量値は番号が同じものを引き継ぐ
+  // 番号が同じコンテナは計量値・キズ・荷札・出荷済みを引き継ぐ
   const old = rec.containers||[];
-  Object.assign(rec,{date:draft.date,time:draft.time,producer:draft.producer,product:draft.product,field:draft.field,
-    qty:draft.qty,containers:draft.containers.map(c=>({no:c.no,weight:(old.find(o=>o.no===c.no)||{}).weight??null}))});
+  Object.assign(rec,{date:draft.date,time:draft.time,producer:draft.producer,product:draft.product,field:draft.field,dest:draft.dest,
+    qty:draft.qty,containers:draft.containers.map(c=>({...(old.find(o=>o.no===c.no)||{weight:null}), no:c.no}))});
+  db.master.lastDest = draft.dest;
   save();
   await makeSlip(rec,false);
   draft.id = rec.id; renderIn();
@@ -383,14 +430,21 @@ function renderWeigh(){
   const d = db.deliveries.find(x=>x.id===curId);
   $('w-box').classList.toggle('hide', !d);
   if(!d) return;
-  $('w-head').textContent = `${d.producer} ／ ${d.product} ／ ${d.field}`;
+  $('w-head').textContent = `${d.producer} ／ ${d.field}` + (d.dest?` → ${d.dest}`:'');
+  const r=d.ratio||{}; $('wr-xl').value=r.xl??''; $('wr-l').value=r.l??''; $('wr-m').value=r.m??'';
   $('w-rows').innerHTML = d.containers.map((c,i)=>`<div class="wrow">
       <span class="n">No.${esc(c.no)}</span>
       <input inputmode="decimal" data-i="${i}" value="${c.weight??''}" placeholder="kg" enterkeyhint="next">
+      <input class="tag" inputmode="numeric" data-t="${i}" value="${esc(c.tag??'')}" placeholder="荷札">
       <button class="chip small kz${c.kizu?' on':''}" data-k="${i}">キズ</button>
-      <span class="net" id="net-${i}">${tare()>0&&net(c)!=null?'正味'+fmt(net(c)):''}</span></div>`).join('');
+      ${tare()>0?`<span class="net" id="net-${i}">${net(c)!=null?'正味'+fmt(net(c)):''}</span>`:''}</div>`).join('');
   updTotal(d);
 }
+// 規格（割合）は納品単位。後から生産者と決めることもあるので空欄可
+['wr-xl','wr-l','wr-m'].forEach(id=>$(id).addEventListener('input',()=>{
+  const d=db.deliveries.find(x=>x.id===curId); if(!d) return;
+  d.ratio={xl:$('wr-xl').value.trim(), l:$('wr-l').value.trim(), m:$('wr-m').value.trim()}; save();
+}));
 function updTotal(d){
   const g=d.containers.reduce((s,c)=>s+(Number(c.weight)||0),0), nt=d.containers.reduce((s,c)=>s+(net(c)||0),0);
   $('w-total').innerHTML = `合計 ${fmt(g)} kg` + (tare()>0?`<br><span style="font-size:16px;color:var(--sub)">正味 ${fmt(nt)} kg（自重 ${tare()}kg 控除）</span>`:'')
@@ -398,8 +452,9 @@ function updTotal(d){
 }
 $('w-pick').onclick = e => {const b=e.target.closest('button'); if(!b) return; curId=b.dataset.id; renderWeigh();};
 $('w-rows').addEventListener('input', e => {
-  const i=e.target.dataset.i; if(i==null) return;
   const d=db.deliveries.find(x=>x.id===curId); if(!d) return;
+  if(e.target.dataset.t!=null){ d.containers[+e.target.dataset.t].tag=e.target.value.trim(); save(); return; }
+  const i=e.target.dataset.i; if(i==null) return;
   const v=e.target.value.replace(/,/g,'').trim();
   d.containers[i].weight = (v===''||isNaN(Number(v))) ? null : Number(v);
   const n=net(d.containers[i]); const el=$('net-'+i);
@@ -413,7 +468,7 @@ $('w-rows').addEventListener('click', e => {
   b.classList.toggle('on', c.kizu); save();
 });
 $('w-rows').addEventListener('keydown', e => {
-  if(e.key!=='Enter') return;
+  if(e.key!=='Enter' || e.target.dataset.i==null) return;
   const next=document.querySelector(`#w-rows input[data-i="${+e.target.dataset.i+1}"]`);
   if(next) next.focus(); else e.target.blur();
 });
@@ -441,18 +496,20 @@ $('l-list').onclick = e => {
   const d=db.deliveries.find(x=>x.id===b.dataset.id); if(!d) return;
   if(b.dataset.a==='w'){curId=d.id; show('w');}
   if(b.dataset.a==='s'){makeSlip(d, d.containers.some(c=>c.weight!=null));}
-  if(b.dataset.a==='e'){draft={id:d.id,date:d.date,time:d.time,producer:d.producer,product:d.product,field:d.field,
+  if(b.dataset.a==='e'){draft={id:d.id,date:d.date,time:d.time,producer:d.producer,product:d.product,field:d.field,dest:d.dest||'',
       containers:d.containers.map(c=>({...c})),qty:d.qty,qtyManual:true}; $('preview').classList.add('hide'); show('in'); renderIn();}
   if(b.dataset.a==='d' && confirm(`${d.producer}（${d.time}）の記録を削除します。よろしいですか？`)){
     db.deliveries=db.deliveries.filter(x=>x.id!==d.id); save(); renderLog();}
 };
 function csvOut(rows, name){
-  const head=['日付','荷受け時間','生産者','品名','圃場名','数量(コンテナ)','コンテナ番号','区分','総重量(kg)','自重(kg)','正味(kg)'];
+  const head=['日付','荷受け時間','生産者','品名','圃場名','数量(コンテナ)','コンテナ番号','区分','総重量(kg)','自重(kg)','正味(kg)',
+    '出荷先','荷札番号','規格 特大','規格 大','規格 中','出荷日','伝票NO'];
   const q = v => '"'+String(v??'').replace(/"/g,'""')+'"';
   const lines=[head.map(q).join(',')];
   rows.forEach(d=>d.containers.forEach(c=>{
-    const n=net(c);
-    lines.push([d.date,d.time,d.producer,d.product,d.field,d.qty,c.no,c.kizu?'キズ':'良',c.weight??'',c.weight==null?'':tare(),n??''].map(q).join(','));
+    const n=net(c), r=d.ratio||{}, s=c.ship||{};
+    lines.push([d.date,d.time,d.producer,d.product,d.field,d.qty,c.no,c.kizu?'キズ':'良',c.weight??'',c.weight==null?'':tare(),n??'',
+      d.dest,c.tag,r.xl,r.l,r.m,s.date,s.no].map(q).join(','));
   }));
   const blob=new Blob(['﻿'+lines.join('\r\n')],{type:'text/csv'});
   const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=name; a.click();
@@ -538,29 +595,154 @@ $('btn-rshare').onclick = async () => {
 };
 
 /* ---------- 設定 ---------- */
+const lines = s => s.split('\n').map(x=>x.trim()).filter(Boolean);
+function producersText(ps){
+  return ps.map(p=>p.name+': '+p.fields.map(f=>{
+    const a=[]; if(p.areas && p.areas[f]!=null) a.push(p.areas[f]); if(p.tenkan && p.tenkan[f]) a.push('転換');
+    return a.length ? `${f}(${a.join(',')})` : f;
+  }).join(', ')).join('\n');
+}
+// 「生産者: 圃場(55), 圃場(75,転換)」→ 括弧内のカンマで割らないよう圃場単位に切り出す
+function parseProducers(text){
+  return lines(text).map(l=>{
+    const i=l.search(/[:：]/);
+    const name=(i<0?l:l.slice(0,i)).trim();
+    const fields=[], areas={}, tenkan={};
+    ((i<0?'':l.slice(i+1)).match(/[^,、，(（]+(?:[(（][^)）]*[)）])?/g)||[]).map(s=>s.trim()).filter(Boolean).forEach(s=>{
+      const a=s.match(/^(.*?)\s*(?:[(（]([^)）]*)[)）])?$/), f=a[1].trim();
+      fields.push(f);
+      (a[2]||'').split(/[,、，]/).map(x=>x.trim()).forEach(x=>{
+        if(/^[\d.]+$/.test(x)) areas[f]=Number(x); else if(x==='転換') tenkan[f]=true;
+      });
+    });
+    return {name,fields,areas,tenkan};
+  });
+}
 function renderSettings(){
   const m=db.master;
   $('s-company').value=m.company; $('s-tare').value=m.tare||'';
+  $('s-inspector').value=m.inspector||''; $('s-dests').value=(m.dests||[]).join('\n');
   $('s-products').value=m.products.join('\n');
-  $('s-producers').value=m.producers.map(p=>p.name+': '+p.fields.map(f=>
-    p.areas && p.areas[f]!=null ? `${f}(${p.areas[f]})` : f).join(', ')).join('\n');
+  $('s-producers').value=producersText(m.producers);
 }
 $('btn-sset').onclick = () => {
   const m=db.master;
   m.company=$('s-company').value.trim();
+  m.inspector=$('s-inspector').value.trim();
+  m.dests=lines($('s-dests').value);
   m.tare=Number($('s-tare').value)||0;
-  m.products=$('s-products').value.split('\n').map(s=>s.trim()).filter(Boolean);
-  m.producers=$('s-producers').value.split('\n').map(l=>l.trim()).filter(Boolean).map(l=>{
-    const i=l.search(/[:：]/);
-    const name=(i<0?l:l.slice(0,i)).trim();
-    const fields=[], areas={};
-    (i<0?[]:l.slice(i+1).split(/[,、，]/)).map(s=>s.trim()).filter(Boolean).forEach(s=>{
-      const a=s.match(/^(.*?)\s*[(（]\s*([\d.]+)\s*[)）]$/);   // 「圃場(55)」→ 面積55
-      if(a){ fields.push(a[1]); areas[a[1]]=Number(a[2]); } else fields.push(s);
-    });
-    return {name,fields,areas};
-  });
+  m.products=lines($('s-products').value);
+  m.producers=parseProducers($('s-producers').value);
   save(); toast('設定を保存しました');
+};
+// 初期設定ファイル（「■ 見出し」で区切ったテキスト）をまとめて読み込む
+$('btn-import').onclick = () => {
+  const sec={}; let cur=null;
+  $('s-import').value.split('\n').forEach(l=>{
+    const h=l.match(/^\s*■\s*(\S+)/); if(h){ cur=h[1]; sec[cur]=''; return; }
+    if(cur) sec[cur]+=l+'\n';
+  });
+  const pick = k => Object.keys(sec).find(x=>x.startsWith(k));
+  const m=db.master, got=[];
+  if(pick('生産者')){ m.producers=parseProducers(sec[pick('生産者')]); got.push(`生産者${m.producers.length}名`); }
+  if(pick('出荷先')){ m.dests=lines(sec[pick('出荷先')]); got.push(`出荷先${m.dests.length}件`); }
+  if(pick('検査員')){ m.inspector=lines(sec[pick('検査員')])[0]||''; got.push('検査員'); }
+  if(pick('受入先')){ m.company=lines(sec[pick('受入先')])[0]||m.company; got.push('受入先名'); }
+  if(!got.length){ toast('「■ 生産者と圃場」などの見出しが見つかりません'); return; }
+  save(); renderSettings(); $('s-import').value='';
+  toast('読み込みました: '+got.join('・'));
+};
+
+/* ---------- 出荷（出荷先×良/キズごとに、未出荷コンテナを荷受けの時刻順に最大11基） ---------- */
+const SLIP_MAX = 11;
+let shipDest='', shipKizu=false, shipSel=null;
+const isTenkan = (producer, field) => {
+  const p=db.master.producers.find(p=>p.name===producer); return !!(p && p.tenkan && p.tenkan[field]);
+};
+const md = s => {const [ ,m,d]=s.split('-'); return `${+m}/${+d}`;};
+function shipCandidates(){
+  const out=[];
+  sorted(db.deliveries.filter(d=>(d.dest||'')===shipDest)).forEach(d=>d.containers.forEach((c,i)=>{
+    if(c.ship || c.weight==null || c.weight==='' || !!c.kizu!==shipKizu) return;
+    out.push({d,c,key:d.id+'|'+i});
+  }));
+  return out;
+}
+function renderShip(){
+  if(!$('s-sdate').value) $('s-sdate').value=todayStr();
+  const dests=db.master.dests||[];
+  if(!dests.includes(shipDest)) shipDest=dests.includes(db.master.lastDest)?db.master.lastDest:(dests[0]||'');
+  chips('c-sdest', dests, shipDest);
+  $('c-skind').innerHTML=[['良',0],['キズ（傷玉）',1]].map(([t,k])=>`<button class="chip${!!k===shipKizu?' on':''}" data-k="${k}">${t}</button>`).join('');
+  const cand=shipCandidates();
+  if(!shipSel) shipSel=new Set(cand.slice(0,SLIP_MAX).map(x=>x.key));
+  const sel=cand.filter(x=>shipSel.has(x.key));
+  $('s-list').innerHTML = cand.length ? cand.map(x=>`<label class="srow"><input type="checkbox" data-key="${x.key}"${shipSel.has(x.key)?' checked':''}>
+      <span>${md(x.d.date)} ${esc(x.d.time)}<br>${esc(x.d.producer)}／${esc(x.d.field)}</span>
+      <span>No.${esc(x.c.no)}${x.c.tag?`<br>荷札${esc(x.c.tag)}`:''}</span><span class="num">${fmt(wt(x.c))}kg</span></label>`).join('')
+    : '<p class="muted">この出荷先・区分で、計量済みの未出荷コンテナはありません</p>';
+  $('s-sum').textContent = `選択 ${sel.length} 基（1枚 ${SLIP_MAX} 基まで）／ ${fmt(sel.reduce((s,x)=>s+wt(x.c),0))} kg`;
+  renderShipped();
+}
+function renderShipped(){
+  const day=$('s-sdate').value, groups=new Map();
+  db.deliveries.forEach(d=>d.containers.forEach(c=>{
+    if(!c.ship || c.ship.date!==day) return;
+    const g=groups.get(c.ship.at)||{s:c.ship,items:[]}; g.items.push({d,c}); groups.set(c.ship.at,g);
+  }));
+  $('s-done').innerHTML = [...groups.values()].map(g=>`<div class="dcard"><b>${esc(g.s.dest)}　${g.s.kizu?'キズ':'良'}　${g.items.length}基</b>
+      <span class="muted">${g.s.no?`NO ${esc(g.s.no)}　`:''}${fmt(g.items.reduce((s,x)=>s+wt(x.c),0))}kg</span>
+      <div class="row" style="margin-top:8px"><button class="chip small" data-a="r" data-at="${g.s.at}">再送</button>
+      <button class="chip small" data-a="u" data-at="${g.s.at}" style="color:var(--danger)">出荷を取り消す</button></div></div>`).join('')
+    || '<p class="muted">まだありません</p>';
+}
+function shipText(items, s){
+  const dash = v => (v==null || String(v).trim()==='') ? '-' : String(v).trim().replace(/\s+/g,'');
+  const L=[`有機蒟蒻 出荷伝票 ${s.date}`, `出荷先\t${dash(s.dest)}`, `区分\t${s.kizu?'キズ':'良'}`, `NO\t${dash(s.no)}`,
+    `検査員\t${dash(db.master.inspector)}`, ['荷受月日','時間','生産者','圃場名','重量','特大','大','中','コンテナ番号','荷札番号','格付け'].join('\t')];
+  items.forEach(({d,c})=>{ const r=d.ratio||{};
+    L.push([md(d.date), d.time.replace(/^0/,''), d.producer, d.field, wt(c), r.xl, r.l, r.m, c.no, c.tag, isTenkan(d.producer,d.field)?'転換':'有機'].map(dash).join('\t')); });
+  return L.join('\r\n');
+}
+async function sendText(text, viaShare){
+  if(viaShare && navigator.share){
+    try{ await navigator.share({text}); return true; }catch(e){ if(e.name==='AbortError') return false; }
+  }
+  try{ await navigator.clipboard.writeText(text); }
+  catch(_){ const ta=document.createElement('textarea'); ta.value=text; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); ta.remove(); }
+  toast('コピーしました'); return true;
+}
+async function shipNow(viaShare){
+  const sel=shipCandidates().filter(x=>shipSel && shipSel.has(x.key));
+  if(!sel.length){ toast('コンテナを選んでください'); return; }
+  const s={date:$('s-sdate').value, dest:shipDest, kizu:shipKizu, no:$('s-no').value.trim(), at:Date.now()};
+  if(!await sendText(shipText(sel, s), viaShare)) return;
+  if(!confirm(`この ${sel.length} 基を「出荷済み」にしますか？（次からは一覧に出ません）`)) return;
+  sel.forEach(x=>x.c.ship=s); save();
+  shipSel=null; $('s-no').value=''; renderShip();
+}
+$('s-sdate').onchange = renderShip;
+$('c-sdest').onclick = e => {const b=e.target.closest('button'); if(!b) return; shipDest=b.dataset.v; shipSel=null; renderShip();};
+$('c-skind').onclick = e => {const b=e.target.closest('button'); if(!b) return; shipKizu=b.dataset.k==='1'; shipSel=null; renderShip();};
+$('s-list').addEventListener('change', e => {
+  const k=e.target.dataset.key; if(!k) return;
+  if(e.target.checked){
+    if(shipSel.size>=SLIP_MAX){ e.target.checked=false; toast(`1枚の伝票は ${SLIP_MAX} 基までです`); return; }
+    shipSel.add(k);
+  } else shipSel.delete(k);
+  renderShip();
+});
+$('btn-ssend').onclick = () => shipNow(true);
+$('btn-scopy').onclick = () => shipNow(false);
+$('s-done').onclick = async e => {
+  const b=e.target.closest('button'); if(!b) return;
+  const at=Number(b.dataset.at), items=[];
+  db.deliveries.forEach(d=>d.containers.forEach(c=>{ if(c.ship && c.ship.at===at) items.push({d,c}); }));
+  if(!items.length) return;
+  if(b.dataset.a==='r') await sendText(shipText(items, items[0].c.ship), true);
+  if(b.dataset.a==='u' && confirm(`${items.length} 基の出荷を取り消して、未出荷に戻しますか？`)){
+    items.forEach(x=>delete x.c.ship); save(); shipSel=null; renderShip();
+  }
 };
 $('btn-bk').onclick = () => {
   const blob=new Blob([JSON.stringify(db)],{type:'application/json'});
