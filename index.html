@@ -67,7 +67,7 @@ table.rep input{width:28px;min-height:28px}
 </style>
 </head>
 <body>
-<header id="ttl">荷受け</header>
+<header id="ttl">荷受け 納品書</header>
 <main>
   <!-- 納品入力 -->
   <div id="v-in">
@@ -218,6 +218,7 @@ function show(v){
   ['in','w','log','rep','set'].forEach(k=>$('v-'+k).classList.toggle('hide',k!==v));
   document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('on',b.dataset.v===v));
   $('ttl').textContent = TITLES[v];
+  if(v==='in') renderIn();   // 設定を変えた直後でも生産者・品名ボタンを最新にする
   if(v==='w') renderWeigh();
   if(v==='log') renderLog();
   if(v==='rep') renderReport();
